@@ -21,6 +21,7 @@
         let team = settings.team
         let reRun = settings.reRun
         let friendshipTeam = settings.friendshipteam
+        let timeout = settings.timeout * 1000;
         let count = settings.count ? settings.count : "6";
         let forceRun = settings.forceRun
         let forceRunPath = settings.forceRunPath
@@ -122,10 +123,10 @@
                 for (let i = 1; i <= 4; i++) {
                     if (reRun == true) {
                         await pathingScript.runFile(`assets/pathing/rerun/${task}-${i}-rerun.json`);
-                        await attemptReward(forceRun, retryCount); 
+                        await isLeyLineOutcrop();
                     } else {
                         await pathingScript.runFile(`assets/pathing/${task}-${i}.json`);
-                        await attemptReward(forceRun, retryCount);
+                        await isLeyLineOutcrop();
                     }
                 }
             } else if (isNearPosition(LeyLineOutcropX, LeyLineOutcropY, -718, 1803)) {
@@ -654,4 +655,71 @@ async function openCustomMarks() {
 // 判断坐标是否在指定位置附近（误差范围内）
 function isNearPosition(x, y, targetX, targetY) {
     return Math.abs(x - targetX) <= 100 && Math.abs(y - targetY) <= 100;
+}
+
+// 判断是否为地脉花
+async function isLeyLineOutcrop() {
+    let ocr = captureGameRegion().find(RecognitionObject.ocrThis);
+    if (ocr && ocr.text.includes("地脉溢口")) {
+        await autoFight(tiemout);
+    } else if (ocr && ocr.text.includes("地脉之花")) {
+        await attemptReward(forceRun, retryCount);
+    } else {
+        log.error("我辣么大一个地脉花哪去了？");
+        return;
+    }
+}
+// 自动战斗
+async function autoFight() {
+    log.info("开始战斗");
+    keyPress("F");
+    await sleep(100);
+    keyDown("S");
+    await sleep(200);
+    keyUp("W"); // 后撤一步防止被花卡住
+    const cts = new CancellationTokenSource();
+    try {
+        dispatcher.RunTask(new SoloTask("AutoFight"), cts);
+        const ocrRegionX = 850;
+        const ocrRegionY = 230;
+        const ocrRegionWidth = 1040 - ocrRegionX;
+        const ocrRegionHeight = 300 - ocrRegionY;
+        let ocrRegion = { x: ocrRegionX, y: ocrRegionY, width: ocrRegionWidth, height: ocrRegionHeight };
+        let fightResult = await recognizeTextInRegion(ocrRegion, timeout) ? "成功" : "失败";
+        log.info(`战斗结束，战斗结果：${fightResult}`);
+        cts.cancel();
+    } catch (error) {
+        log.error(`执行过程中出错: ${error}`);
+    }
+}
+
+// 识别战斗结果
+async function recognizeTextInRegion(ocrRegion, timeout) {
+    let startTime = Date.now();
+    const successKeywords = ["挑战达成", "战斗胜利", "挑战成功"];
+    const failureKeywords = ["挑战失败"];
+    while (Date.now() - startTime < timeout) {
+        try {
+            let result = captureGameRegion().find(RecognitionObject.ocr(ocrRegion.x, ocrRegion.y, ocrRegion.width, ocrRegion.height));
+            let text = result.text;
+            for (let keyword of successKeywords) {
+                if (text.includes(keyword)) {
+                    log.info("检测到战斗成功关键词: {0}", keyword);
+                    return true;
+                }
+            }
+            for (let keyword of failureKeywords) {
+                if (text.includes(keyword)) {
+                    log.warn("检测到战斗失败关键词: {0}", keyword);
+                    return false;
+                }
+            }
+        }
+        catch (error) {
+            log.error("OCR过程中出错: {0}", error);
+        }
+        await sleep(1000);   // 检查间隔
+    }
+    log.warn("在超时时间内未检测到战斗结果");
+    return false;
 }
