@@ -15,16 +15,16 @@
         setGameMetrics(1920, 1080, 1)
 
         // 读取配置文件
-        let start = settings.start
-        let type = settings.leyLineOutcropType
-        let country = settings.country
-        let team = settings.team
-        let reRun = settings.reRun
-        let friendshipTeam = settings.friendshipteam
-        let timeout = settings.timeout * 1000;
-        let count = settings.count ? settings.count : "6";
-        let forceRun = settings.forceRun
-        let forceRunPath = settings.forceRunPath
+        const start = settings.start
+        const type = settings.leyLineOutcropType
+        const country = settings.country
+        const team = settings.team
+        const reRun = settings.reRun
+        const friendshipTeam = settings.friendshipteam
+        const timeout = settings.timeout * 1000 ? settings.timeout * 1000 : 12000;
+        const count = settings.count ? settings.count : "6";
+        const forceRun = settings.forceRun
+        const forceRunPath = settings.forceRunPath
         retry = false;
         retryCount = 0;
 
@@ -100,7 +100,7 @@
             try {
                 for (let i = 1; i <= 6; i++) {
                     await pathingScript.runFile(`assets/pathing/${forceRunPath}-${i}.json`);
-                    await attemptReward(forceRun, retryCount);
+                    await isLeyLineOutcrop(timeout);
                 }
             } catch (error) {
                 log.info(error.message);
@@ -123,10 +123,10 @@
                 for (let i = 1; i <= 4; i++) {
                     if (reRun == true) {
                         await pathingScript.runFile(`assets/pathing/rerun/${task}-${i}-rerun.json`);
-                        await isLeyLineOutcrop();
+                        await isLeyLineOutcrop(timeout);
                     } else {
                         await pathingScript.runFile(`assets/pathing/${task}-${i}.json`);
-                        await isLeyLineOutcrop();
+                        await isLeyLineOutcrop(timeout);
                     }
                 }
             } else if (isNearPosition(LeyLineOutcropX, LeyLineOutcropY, -718, 1803)) {
@@ -380,6 +380,19 @@
                         await attemptReward(forceRun, retryCount);
                     }
                 }
+            } else if (isNearPosition(LeyLineOutcropX, LeyLineOutcropY, 9999, -1570)) {
+                foundStrategy = true;
+                task = "纳塔7-烟谜主";
+                log.info(`执行策略：${task}`);
+                for (let i = 1; i <= 3; i++) {
+                    if (reRun == true) {
+                        await pathingScript.runFile(`assets/pathing/rerun/${task}-${i}-rerun.json`);
+                        await attemptReward(forceRun, retryCount); 
+                    } else {
+                        await pathingScript.runFile(`assets/pathing/${task}-${i}.json`);
+                        await attemptReward(forceRun, retryCount) 
+                    }
+                }
             }
         }
         if (!foundStrategy) {
@@ -592,7 +605,7 @@ function shouldMoveMap(country, retry, retryCount) {
         "璃月": [0, 1, 2],
         "稻妻": [0, 1],
         "枫丹": [0, 1],
-        "纳塔": [0, 1, 2]
+        "纳塔": [0, 1, 2, 3]
     };
 
     return countryRetryMap[country] && countryRetryMap[country].includes(retryCount);
@@ -617,7 +630,8 @@ function getMapPosition(country, retryCount) {
         ],
         "纳塔": [
             { x: 9040, y: -2428, name: "虹灵的净土" },
-            { x: 8258, y: -1744, name: "硫晶支脉下方锚点" }
+            { x: 8258, y: -1744, name: "硫晶支脉下方锚点" },
+            { x: 8582, y: -2675, name: "溶水域七天神像" }
         ]
     };
 
@@ -658,10 +672,10 @@ function isNearPosition(x, y, targetX, targetY) {
 }
 
 // 判断是否为地脉花
-async function isLeyLineOutcrop() {
+async function isLeyLineOutcrop(timeout) {
     let ocr = captureGameRegion().find(RecognitionObject.ocrThis);
     if (ocr && ocr.text.includes("地脉溢口")) {
-        await autoFight(tiemout);
+        await autoFight(timeout);
     } else if (ocr && ocr.text.includes("地脉之花")) {
         await attemptReward(forceRun, retryCount);
     } else {
@@ -670,7 +684,7 @@ async function isLeyLineOutcrop() {
     }
 }
 // 自动战斗
-async function autoFight() {
+async function autoFight(timeout) {
     log.info("开始战斗");
     keyPress("F");
     await sleep(100);
