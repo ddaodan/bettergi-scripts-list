@@ -392,7 +392,7 @@ async function processLeyLineOutcrop(timeout, forceRun, targetPath, retries = 0)
     let ocr = captureGameRegion().find(RecognitionObject.ocrThis);
     if (ocr && ocr.text.includes("地脉溢口")) {
         log.info("识别到地脉溢口");
-        openOutcrop();
+        await openOutcrop(targetPath);
         await autoFight(timeout);
         await autoNavigateToReward();
         const settings = { forceRun };
