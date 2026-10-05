@@ -21,7 +21,7 @@ jobs:
         contains(github.event.comment.body, '/fix') ||
         contains(github.event.comment.body, '/refresh')
       )
-    uses: ddaodan/bettergi-github-bot/.github/workflows/repo-bot.yml@v1
+    uses: ddaodan/bettergi-github-bot/.github/workflows/repo-bot.yml@main
     permissions:
       issues: write
       contents: read
@@ -37,5 +37,5 @@ jobs:
       ai-model: ${{ vars.REPO_BOT_AI_MODEL }}
       ai-api-style: ${{ vars.REPO_BOT_AI_API_STYLE }}
       ai-timeout-ms: ${{ vars.REPO_BOT_AI_TIMEOUT_MS }}
-      action-ref: v1
+      action-ref: main
       github-app-id: ${{ vars.REPO_BOT_GITHUB_APP_ID }}
